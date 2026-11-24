@@ -1,0 +1,42 @@
+## SPDX-License-Identifier: BSD-2-Clause-Patent
+
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = ElishMemoryMapProbeDxe
+  FILE_GUID      = 3BAF47D0-1540-4B8F-A497-02B3C580AE67
+  MODULE_TYPE    = DXE_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = ElishMemoryMapProbeDxeEntryPoint
+
+[Sources]
+  ElishMemoryMapProbeDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  QcomPkg/QcomPkg.dec
+  AdvLoggerPkg/AdvLoggerPkg.dec
+  SiliciumPkg/SiliciumPkg.dec
+  UniXNUPkg/UniXNUPkg.dec
+
+[LibraryClasses]
+  DebugLib
+  FdtLib
+  MemoryAllocationLib
+  PrintLib
+  RamLogLib
+  UefiLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Guids]
+  gFdtTableGuid
+
+[Protocols]
+  gEfiRamPartitionProtocolGuid  ## CONSUMES
+  gEfiGraphicsOutputProtocolGuid ## CONSUMES
+  gAdvancedLoggerProtocolGuid ## CONSUMES
+  gUniXNUMenuPluginProtocolGuid ## CONSUMES
+
+[Depex]
+  TRUE

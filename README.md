@@ -1,53 +1,22 @@
-# uefi-sheng
+# uefi-elish
 
-UEFI platform integration for the Xiaomi Pad 6S Pro (sheng, SM8550), using
-Project Silicium and Project Mu.
+Mu-Silicium UEFI for the Xiaomi Pad 5 Pro Wi-Fi (`elish`, `M2105K81AC`, SM8250-AC). This firmware is part of the UniXNU port targeting iPadOS 17.7.11 (`21H461`). [UniXNU-elish device repository](https://github.com/crystalWinter666/UniXNU-elish)
 
-The platform supplies memory reservations, board peripherals, display
-handoff, and the firmware volume. UniXNU supplies the boot application and
-DarwinBoot loader. UniXNU-sm8550-common supplies shared XNU platform support.
+## Hardware status
 
-- [Firmware integration](https://unixnu.com/porting/uefi-firmware)
-- [sheng device support](https://unixnu.com/devices/sheng)
-- [Build instructions](Building.md)
-- [Platform details](Platforms/Xiaomi/shengPkg/PORTING.md)
-- [Platform status](Status.md)
+- RAM-only `fastboot boot` reached the UniXNU boot menu.
+- The DEBUG ramoops probe captured two Qualcomm RAM Partition ranges and 47 UEFI DRAM descriptors before BDS. Recovery through LineageOS root ADB was verified. [Capture report](https://github.com/crystalWinter666/UniXNU-elish/blob/format2-device/reports/elish-uefi-pre-bds-memory-map-20261124.md)
+- DarwinBoot's final memory map and handoff to XNU, UFS/APFS root mounting, and iPadOS startup remain to be verified.
 
-## Payload firmware
+## Build
 
-Build through `./unixnu build firmware --uefi ../uefi-sheng` from UniXNU.
-The DSC and FDF include `UniXNURamDiskDxe`, DiskIoDxe and FAT support so the
-boot-image payload appears as a filesystem. `UniXNURamDiskDxe` is a shared
-module in UniXNU's `package/`, and uses the Mu-Silicium FDT handoff.
-`ShengBootMemoryDxe` supplies the board's memory expansion policy.
-See [required firmware integration](https://unixnu.com/porting/uefi-firmware#required-integration).
+Clone this checkout with its submodules next to `UniXNU-elish` and `UniXNU`. Follow the device repository's instructions for the UniXNU revision and build support patch. Run the firmware build from the UniXNU checkout. [Device build instructions](https://github.com/crystalWinter666/UniXNU-elish#build)
 
-## Credits
+```sh
+./unixnu build firmware -D ../UniXNU-elish \
+  --uefi ../uefi-elish --edk2 ../uefi-elish/Mu_Basecore
+```
 
-[Microsoft](https://github.com/microsoft/) for their [Project Mu](https://microsoft.github.io/mu/) which Powers this Project. <br>
-[WOA-Project](https://github.com/WOA-Project/) for their [mu_andromeda_platforms](https://github.com/WOA-Project/mu_andromeda_platforms/) which is used as Base for this Project. <br>
-[Project Aloha](https://github.com/Project-Aloha/) for their [mu_aloha_platforms](https://github.com/Project-Aloha/mu_aloha_platforms/) which is used as Reference for some SoCs. <br>
-[Open Surface RT](https://openrt.gitbook.io/open-surfacert/) for their Help on Tegra Related Stuff.
+The elish DSC and FDF are in `Platforms/Xiaomi/elishPkg/`. `Resources/Configs/elish.toml` selects the 3 MiB firmware volume and Android v3 boot image format. The DEBUG build writes to the Android ramoops console. The board's normal configuration leaves `ELISH_MEMORY_MAP_PROBE` disabled. [Platform notes](Platforms/Xiaomi/elishPkg/PORTING.md)
 
-[sonic011gamer](https://github.com/sonic011gamer/) and [halal-beef](https://github.com/halal-beef/) for their Amazing Work on Exynos Related Stuff.
-
-## License
-
-All code except drivers in `GPLDrivers` & `GPLApplications` & `GPLLibrary` directories are licensed under BSD-2-Clause. <br />
-GPL Drivers are licensed under `GPLv2` or later license.
-
-## Device porting record
-
-The firmware section of [sheng's porting record](https://unixnu.com/devices/sheng#firmware)
-records handoff inputs, development findings, evidence and completion criteria.
-Update `UniXNU-sheng/porting.toml` when firmware work changes those inputs or
-results. Maintainers and agents use the [same workflow](https://unixnu.com/porting/records).
-
-## Local build inputs
-
-Save device paths and boot arguments in `unixnu.local.toml` in the UniXNU
-checkout. See the [configuration reference](https://unixnu.com/reference/configuration#local-build-inputs).
-Then use `./unixnu kernel`, `./unixnu firmware`, `./unixnu payload`, and
-`./unixnu bootimg`. Argument changes require rebuilding the payload and boot
-image. See [boot arguments](https://unixnu.com/xnu/boot-arguments#apply-arguments)
-and [green-bar diagnosis](https://unixnu.com/guide/debugging#green-bar).
+The port is based on the `uefi-sheng` branch at commit `66421cb7bb5694843aec8de1ca3d1de4c20cca38`. [Upstream](https://github.com/UniXNU/uefi-sheng/tree/66421cb7bb5694843aec8de1ca3d1de4c20cca38)

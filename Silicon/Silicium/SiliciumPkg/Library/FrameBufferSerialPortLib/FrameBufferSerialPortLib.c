@@ -2,6 +2,7 @@
 #include <Library/CacheMaintenanceLib.h>
 #include <Library/MemoryMapHelperLib.h>
 #include <Library/SerialPortLib.h>
+#include <Library/RamLogLib.h>
 #include <Library/TimerLib.h>
 
 #include <Library/FrameBufferHandoff.h>
@@ -306,6 +307,7 @@ SerialPortWrite (
   // Get Frame Buffer Memory
   Status = GetFrameBufferMemory (&FbBase, &FbLength);
   if (EFI_ERROR (Status)) {
+    RamLogWrite (Buffer, NumberOfBytes);
     return 0;
   }
 
@@ -322,16 +324,16 @@ SerialPortWrite (
 
   // Write Debug Message to Frame Buffer
   for (UINTN i = 0; i < NumberOfBytes; i++) {
-    WriteFrameBuffer (FbBase, FbLength, *Buffer++);
-  }
-
-  // Enable Interrupts
-  if (InterruptState) {
-    ArmEnableInterrupts ();
+    WriteFrameBuffer (FbBase, FbLength, Buffer[i]);
   }
 
   // Flush Frame Buffer
   WriteBackInvalidateDataCacheRange ((VOID *)mFbGeometry.Base, (UINTN)FB_PITCH * FB_HEIGHT);
+  RamLogWrite (Buffer, NumberOfBytes);
+
+  if (InterruptState) {
+    ArmEnableInterrupts ();
+  }
 
   return NumberOfBytes;
 }
