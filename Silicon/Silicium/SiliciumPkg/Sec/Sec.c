@@ -5,6 +5,7 @@
 
 #include <Library/PcdLib.h>
 #include <Library/DebugLib.h>
+#include <Library/RamLogLib.h>
 #include <Library/PrePiLib.h>
 #include <Library/DebugAgentLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -134,6 +135,8 @@ SecMain (VOID)
   PlatformInitialize ();
 
 #ifndef MDEPKG_NDEBUG
+  RamLogReset ();
+
   // Initialize Serial Port
   Status = SerialPortInitialize ();
   if (EFI_ERROR (Status)) {

@@ -43,6 +43,7 @@
   MemoryInitPeiLib
   PlatformPeiLib
   SerialPortLib
+  RamLogLib
   PrintLib
   TimerLib
   HobLib
