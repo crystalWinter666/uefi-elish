@@ -94,6 +94,9 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/Disk/UnicodeCollation/EnglishDxe/EnglishDxe.inf
   INF FatPkg/EnhancedFatDxe/Fat.inf
   INF DarwinBootPkg/Driver/DarwinBoot.inf
+!if $(TARGET) == DEBUG && $(ELISH_RAMOOPS_LOG) == TRUE && $(ELISH_LOADER_PROBE) == TRUE
+  INF elishPkg/Drivers/ElishLoaderProbeDxe/ElishLoaderProbeDxe.inf
+!endif
   INF UniXNUPkg/Application/UniXNU/UniXNU.inf
   INF UniXNUPkg/Driver/UniXNUDxe/UniXNUDxe.inf
 
