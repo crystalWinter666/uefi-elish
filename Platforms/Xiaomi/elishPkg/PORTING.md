@@ -310,6 +310,47 @@ The XBL `uefiplat.cfg` UFS section at file offset `0xca06d` sets
 `ConfigurationMapLib` uses the same values. The active UFS stream IDs, SMMU
 context ownership, clock state and reset/PHY initialization remain unknown.
 
+## 2026-11-25 read-only SMMUv2 probe
+
+The RAM-only run06 diagnostic scanned all 87 apps-SMMU stream-match groups
+without writing registers. Only group 4 had `SMR=0x84020820` and
+`S2CR=0x00000004` (translation type, context bank 4). SMMUv2 assigns VALID to
+SMR bit 31 and MASK to bits 30:16, so the mask is `0x0402` and the SID is
+`0x0820`; the matching IDs are `0x0820`, `0x0822`, `0x0c20` and `0x0c22`.
+The first run's diagnostic text incorrectly included VALID in the printed
+mask. The opt-in probe source now decodes the 15-bit MASK field correctly;
+the run06 image itself retains the original print. This register mapping is
+not attributed to UFS because the stock elish UFS DT lacks `iommus` and no
+firmware mapping connects these matching IDs to the controller.
+
+The same log directly records DarwinBoot opening the FAT configuration and
+kernel/ADT, the 256 MiB handoff window, and successful `ExitBootServices()`
+with the accepted key snapshot (`0x3ee`). Its final map contains 72 entries.
+The diagnostic intentionally stops after EBS and does not enter XNU. The raw
+49,328-byte ramoops log and hashes are in
+`reports/elish-run06-smmu-console-ramoops-20261125.txt` in the device repo.
+
+### run11 context-bank follow-up
+
+The second RAM-only probe uses the corrected 15-bit SMR MASK decode and reads
+the selected context bank's CBAR, SCTLR, TTBR0, TCR and FSR after validating
+the ID1-advertised page layout and MMIO bounds. It reports the same group-4
+SID match and reads context bank 4 at SMMU offset `0x84000`; CBAR is at
+`0x1010`.
+
+The raw values are `CBAR=0x0001f000`, `SCTLR=0x000000e0`, `TTBR0=0`, `TCR=0`,
+`FSR=0x00000400`. CBAR type 1 is S1 translation/S2 bypass. SCTLR.M is bit 0
+and is clear; TTBR0/TCR do not provide an enabled S1 table. FSR is retained
+without decoding. The mapping is not identified as UFS, and these values do
+not qualify UFS DMA. The 67,751,936-byte Android v3 image SHA-256 is
+`9e6dbce96f9551c56265c375a05877d3b0fcbc283b9c03c322987f8ca18f8767`; its
+3,145,728-byte FD SHA-256 is
+`c4f8b465c5b55bd4e1a3578643e551fe2f4f8d3cd25318f9bb0fb89365bbc58d`. The
+49,439-byte ramoops log and hash are in
+`reports/elish-run11-smmu-context-console-ramoops-20261125.txt` in the device
+repo. This probe also confirms the 256 MiB DarwinBoot window and successful
+EBS, then deliberately stops before XNU.
+
 ## 2026-11-24 memory-map probe retest
 
 The diagnostic build compiled `ElishMemoryMapProbeDxe` into `FVMAIN`. A source
@@ -330,3 +371,49 @@ also accepted by fastboot, and Android ADB re-enumerated within 10 seconds.
 The current runs do not distinguish driver dispatch from timer behavior. No
 partition was written. Full hashes and results are in
 `/root/repo/UniXNU-elish/reports/elish-memory-map-probe-20261124.md`.
+
+## 2026-11-25 run18 pmsg readback probe
+
+The opt-in DEBUG `ElishLoaderProbeDxe` mode reads the reserved ramoops pmsg
+header, first 48 bytes, and the two-word post-`_arm_vm_init` marker at
+`0xB03FF000`. It writes only to the existing ramoops console through
+`RamLogWrite`, then uses the existing EBS interposer to record the accepted
+memory map and warm-restart without entering XNU. The `ELISH_LOADER_PROBE_PMSG`
+build define defaults to `FALSE` and is enabled only by the diagnostic build
+helper.
+
+The driver and firmware build succeeded in a host-only run. The 3 MiB FD
+SHA-256 is `e8f34ecc4758ba38d820965ca6e6e3ca526645986f90c01d05c7229bd64e3ae8`;
+the 67,751,936-byte Android v3 image SHA-256 is
+`d96aeadaf64999975f6af3427b8a811aaed639679d111ff70992cb24f559c939`.
+The image has not run on elish, so marker visibility and XNU progress remain
+unverified. Build inputs, revisions and paired post-VM image details are in
+`/root/repo/UniXNU-elish/reports/elish-run18-post-vm-pmsg-20261125.md`.
+
+## 2026-11-25 run19 IORT/SMMUv2 capture
+
+The opt-in `ELISH_LOADER_PROBE_SMMU` path now locates the active IORT through
+`EfiLocateFirstAcpiTable()`, validates its checksum and node/mapping bounds,
+and logs the `UFS0` named-component mappings before the existing read-only
+SMMUv2 scan. It does not install an ACPI table or write SMMU registers. The
+default board configuration still excludes this diagnostic driver.
+
+The host build succeeded. The 3 MiB FD SHA-256 is
+`2f40713e964cd2ba54d66759244e4dba7bfe1340746b21676864a9f795b797dc`; the
+67,751,936-byte Android v3 image SHA-256 is
+`ab653c2ebee272a7a56fc0c60eba6490b14e77132dd3b3eccc3a91d7aaf9fe0b`.
+Compiled probe strings were confirmed in `ElishLoaderProbeDxe.efi`. The image
+above was a host-only build. An enhanced image added per-node offset, type and
+identifier output so an IORT `OutputReference` could be resolved from the same
+capture. Its 3 MiB FD SHA-256 is
+`c9b1be78eb7866155798a9a082d76b0403ed2d5331a94e7a9427c3cb67de34dc`; its
+67,751,936-byte Android v3 image SHA-256 is
+`c8d724467afb0822ad6caba9074a2b40a5dc8075a4947589ee947cfcef6dd371`.
+The RAM-only device run reported no IORT in the active ACPI configuration.
+The existing SMMU scan again found SID `0x820`, mask `0x402`, context bank 4,
+with S1 translation disabled. It captured successful EBS and stopped before
+XNU. No UFS stream attribution follows from this result, so DMA stays disabled.
+The full device log and run sequence are in
+`/root/repo/UniXNU-elish/reports/elish-run18-run19-device-20261125.md`; build
+inputs and the initial image details are in
+`/root/repo/UniXNU-elish/reports/elish-iort-smmu-probe-20261125.md`.

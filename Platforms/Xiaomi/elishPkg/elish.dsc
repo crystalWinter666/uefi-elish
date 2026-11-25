@@ -13,6 +13,10 @@
   USE_CUSTOM_DISPLAY_DRIVER = 0
   SOC_TYPE                = 2
   DEFINE ELISH_RAMOOPS_LOG = FALSE
+  DEFINE ELISH_LOADER_PROBE = FALSE
+  DEFINE ELISH_LOADER_PROBE_RUN_KERNEL = FALSE
+  DEFINE ELISH_LOADER_PROBE_SMMU = FALSE
+  DEFINE ELISH_LOADER_PROBE_PMSG = FALSE
 
 !include KonaPkg/KonaPkg.dsc.inc
 
@@ -93,3 +97,17 @@
   UniXNUPkg/Driver/UniXNUDxe/UniXNUDxe.inf
   UniXNUPkg/Driver/UniXNURamDiskDxe/UniXNURamDiskDxe.inf
   DarwinBootPkg/Driver/DarwinBoot.inf
+!if $(TARGET) == DEBUG && $(ELISH_RAMOOPS_LOG) == TRUE && $(ELISH_LOADER_PROBE) == TRUE
+  elishPkg/Drivers/ElishLoaderProbeDxe/ElishLoaderProbeDxe.inf {
+!if $(ELISH_LOADER_PROBE_SMMU) == TRUE
+    <BuildOptions>
+      *_*_*_CC_FLAGS = -DELISH_LOADER_PROBE_SMMU=1
+!elseif $(ELISH_LOADER_PROBE_RUN_KERNEL) == TRUE
+    <BuildOptions>
+      *_*_*_CC_FLAGS = -DELISH_LOADER_PROBE_RUN_KERNEL=1
+!elseif $(ELISH_LOADER_PROBE_PMSG) == TRUE
+    <BuildOptions>
+      *_*_*_CC_FLAGS = -DELISH_LOADER_PROBE_PMSG=1
+!endif
+  }
+!endif

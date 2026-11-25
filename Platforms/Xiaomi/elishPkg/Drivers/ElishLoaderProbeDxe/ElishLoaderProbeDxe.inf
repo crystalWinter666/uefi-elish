@@ -1,0 +1,35 @@
+## SPDX-License-Identifier: BSD-2-Clause-Patent
+[Defines]
+  INF_VERSION    = 0x00010005
+  BASE_NAME      = ElishLoaderProbeDxe
+  FILE_GUID      = D4EA91DC-08D9-47B0-AC74-9381899A4807
+  MODULE_TYPE    = DXE_DRIVER
+  VERSION_STRING = 1.0
+  ENTRY_POINT    = ElishLoaderProbeDxeEntryPoint
+
+[Sources]
+  ElishLoaderProbeDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  SiliciumPkg/SiliciumPkg.dec
+  UniXNUPkg/UniXNUPkg.dec
+
+[LibraryClasses]
+  BaseLib
+  BaseMemoryLib
+  FdtLib
+  HobLib
+  IoLib
+  MemoryMapHelperLib
+  PrintLib
+  RamLogLib
+  UefiLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Protocols]
+  gUniXNULoaderProtocolGuid ## CONSUMES
+
+[Depex]
+  gUniXNULoaderProtocolGuid
