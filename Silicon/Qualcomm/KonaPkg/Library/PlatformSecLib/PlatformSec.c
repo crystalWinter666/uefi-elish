@@ -32,9 +32,14 @@ PlatformInitialize ()
   // Disable WatchDog Timer
   DisableWatchDogTimer ();
 
-  // Set MDP SIDs
-  CONST UINT16 MdpStreams[] = { 0x820, 0x821, 0x822, 0xC20, 0xC21, 0xC22 };
+  CONST UINT16 RetainedStreams[] = {
+    0x820, 0x821, 0x822, 0xC20, 0xC21, 0xC22,
+#if defined (ELISH_UFS_HANDOFF_PROBE)
+    // SecMain has checked these inherited matches and their context state.
+    0x4E0, 0xE0,
+#endif
+  };
 
   // Detach IOMMU Domains
-  ArmSmmuDetach (MdpStreams, ARRAY_SIZE (MdpStreams));
+  ArmSmmuDetach (RetainedStreams, ARRAY_SIZE (RetainedStreams));
 }

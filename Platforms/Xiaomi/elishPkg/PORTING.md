@@ -417,3 +417,30 @@ The full device log and run sequence are in
 `/root/repo/UniXNU-elish/reports/elish-run18-run19-device-20261125.md`; build
 inputs and the initial image details are in
 `/root/repo/UniXNU-elish/reports/elish-iort-smmu-probe-20261125.md`.
+
+## elish UFS firmware handoff
+
+The DEBUG `ELISH_SEC_SMMU_PROBE` captures inherited SMRs and matched context
+banks before `PlatformInitialize()` and warm-restarts. Run36 observed
+`0x4E0 → CB2` and `0xE0 → CB3` with stage-1 translation disabled. These match
+the two UFS streams identified in stock XBL. Normal Kona SEC detaches them.
+
+`ELISH_UFS_HANDOFF_PROBE` checks both exact unshared routes and their bypass
+state before permitting Kona SEC to retain them. The DXE trace samples the
+result and reserves three contiguous BootServicesData pages below 4 GiB.
+The handoff probe leaves the HCI queues untouched. See the run36 and later
+UFS handoff reports in the elish device repository.
+
+Run40 used the retained UFS routes for bounded NOP, READ CAPACITY(10), known
+LBA and primary/backup GPT reads. The device probe used the low DMA arena and
+stopped before DarwinBoot; it did not write storage. The exact results and
+console capture are in `reports/elish-run40-ufs-gpt-20261126.md` in the device
+repository. This qualifies the UEFI read path, not XNU ownership or root boot.
+
+The opt-in `ELISH_LOADER_PROBE_RUN_KERNEL` build variant retains the qualified
+routes through SEC, samples the gated controller state, then enters DarwinBoot
+without submitting UFS commands or allocating a probe DMA arena. Its host
+build produced `/tmp/elish-run41-ufs-route-through-kernel-20261126/boot.img`
+(SHA-256 `bf3c3a0c9d41a886497e1843b2d5705c3770de85ff8d1c3ce0654aebd45a332b`).
+It has not been booted on the device. XNU UFS access and full System-root mount
+remain unverified.

@@ -18,12 +18,14 @@
 [LibraryClasses]
   BaseLib
   BaseMemoryLib
+  CacheMaintenanceLib
   FdtLib
   HobLib
   IoLib
   MemoryMapHelperLib
   PrintLib
   RamLogLib
+  TimerLib
   UefiLib
   UefiBootServicesTableLib
   UefiDriverEntryPoint
