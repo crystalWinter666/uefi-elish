@@ -75,6 +75,7 @@
 #define PSCI_SYSTEM_RESET     0x84000009
 
 STATIC BOOLEAN  mRestarting;
+STATIC BOOLEAN  mPreserveConsole;
 
 STATIC
 VOID
@@ -90,6 +91,9 @@ VOID
 AppendByte (
   IN UINT8  Byte)
 {
+  if (mPreserveConsole) {
+    return;
+  }
   UINT32 Start = MmioRead32 (RAMOOPS_CONSOLE_BASE + 4);
   UINT32 Size  = MmioRead32 (RAMOOPS_CONSOLE_BASE + 8);
 
@@ -320,23 +324,11 @@ PrepareWarmFastboot (VOID)
   return 0;
 }
 
+STATIC
 VOID
-EFIAPI
-RamLogRestartIntoFastboot (VOID)
+RequestWarmFastboot (VOID)
 {
   UINTN ArgInfo, Arg0, Arg1;
-
-  mRestarting = TRUE;
-
-  UINT32 Code = PrepareWarmFastboot ();
-  AppendText ("RamLog: restarting into fastboot, PON 0x");
-  AppendHex (Code);
-  AppendText (Code == 0 ? " (warm)\n" : " (not prepared, the log may be lost)\n");
-
-  // Let the last lines (already in DDR and on the framebuffer) stay visible/recordable before the reset. TimerLib's
-  // MicroSecondDelay is already used below and in SetWarmReset, so it is available at this ASSERT point; the delay is
-  // bounded and mRestarting (set above) guards against any recursive ASSERT during it.
-  MicroSecondDelay (RAMOOPS_RESTART_DELAY_US);
 
   MmioWrite32 (IMEM_RESTART_REASON, RESTART_BOOTLOADER);
 
@@ -351,6 +343,37 @@ RamLogRestartIntoFastboot (VOID)
 
   MmioWrite32 (PS_HOLD, 0);
   MicroSecondDelay (1000000);
+}
+
+// elish DXE viewer only. SEC uses the null logger in this build.
+UINT32
+EFIAPI
+ElishWarmFastbootPreserveConsole (VOID)
+{
+  mPreserveConsole = TRUE;
+  mRestarting = TRUE;
+  UINT32 Code = PrepareWarmFastboot ();
+  if (Code != 0) {
+    return Code;
+  }
+  RequestWarmFastboot ();
+  return 0xFF;
+}
+
+VOID
+EFIAPI
+RamLogRestartIntoFastboot (VOID)
+{
+  mRestarting = TRUE;
+
+  UINT32 Code = PrepareWarmFastboot ();
+  AppendText ("RamLog: restarting into fastboot, PON 0x");
+  AppendHex (Code);
+  AppendText (Code == 0 ? " (warm)\n" : " (not prepared, the log may be lost)\n");
+
+  // Leave the last lines visible long enough to capture before the reset.
+  MicroSecondDelay (RAMOOPS_RESTART_DELAY_US);
+  RequestWarmFastboot ();
 
   // Still here: PSCI's reset, a hard one unless the PON type above holds
   AppendText ("RamLog: PS_HOLD did not restart, PSCI SYSTEM_RESET\n");

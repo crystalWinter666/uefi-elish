@@ -40,6 +40,9 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
   INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   INF SiliciumPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
+!if $(ELISH_RAMOOPS_VIEWER) == TRUE
+  INF elishPkg/Drivers/ElishRamoopsViewerDxe/ElishRamoopsViewerDxe.inf
+!endif
 !if $(ELISH_MEMORY_MAP_PROBE) != TRUE || $(TARGET) != DEBUG || $(ELISH_RAMOOPS_LOG) != TRUE
   INF SiliciumPkg/Drivers/RamManagerDxe/RamManagerDxe.inf
 !endif
@@ -80,6 +83,9 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/Console/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   INF EmbeddedPkg/SimpleTextInOutSerial/SimpleTextInOutSerial.inf
   INF SiliciumPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
+!if $(ELISH_RAMOOPS_VIEWER) == TRUE
+  INF elishPkg/Drivers/ElishRamoopsViewerDxe/ElishRamoopsViewerDxe.inf
+!endif
   INF MdeModulePkg/Universal/SmbiosDxe/SmbiosDxe.inf
   INF SiliciumPkg/Drivers/SmBiosTableDxe/SmBiosTableDxe.inf
 

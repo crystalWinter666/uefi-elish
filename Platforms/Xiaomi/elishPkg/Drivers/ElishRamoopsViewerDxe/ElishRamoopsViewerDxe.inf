@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+
+[Defines]
+  INF_VERSION = 0x00010005
+  BASE_NAME   = ElishRamoopsViewerDxe
+  FILE_GUID   = d5b6b2a0-745c-4feb-a937-c6bea73525ee
+  MODULE_TYPE = DXE_DRIVER
+  ENTRY_POINT = ElishRamoopsViewerEntry
+
+[Sources]
+  ElishRamoopsViewerDxe.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  BaseLib
+  IoLib
+  MemoryAllocationLib
+  PrintLib
+  RamLogLib
+  UefiBootServicesTableLib
+  UefiDriverEntryPoint
+
+[Protocols]
+  gEfiGraphicsOutputProtocolGuid ## CONSUMES
+  gEfiSimpleTextOutProtocolGuid  ## CONSUMES
+
+[Depex]
+  gEfiGraphicsOutputProtocolGuid

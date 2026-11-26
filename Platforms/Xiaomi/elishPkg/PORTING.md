@@ -390,6 +390,18 @@ The image has not run on elish, so marker visibility and XNU progress remain
 unverified. Build inputs, revisions and paired post-VM image details are in
 `/root/repo/UniXNU-elish/reports/elish-run18-post-vm-pmsg-20261125.md`.
 
+## Touch console readback
+
+`scripts/build-loader-probe.py --ramoops-viewer` in the device repository
+builds a firmware-only image with `ELISH_RAMOOPS_VIEWER=TRUE` and
+`ELISH_RAMOOPS_LOG=FALSE`. DXE reads the previous console ring at
+`0xb0000000`, paints touch messages on the internal panel and requests the
+PMIC warm return before BDS. When the text grid fits at twice its normal
+width and height, the viewer enlarges the glyphs for camera capture. The
+viewing image has no ramdisk. See
+`reports/elish-run81-touch-20261126.md` in the device repository for the
+device attempt and image hashes.
+
 ## 2026-11-25 run19 IORT/SMMUv2 capture
 
 The opt-in `ELISH_LOADER_PROBE_SMMU` path now locates the active IORT through

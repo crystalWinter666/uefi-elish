@@ -13,6 +13,7 @@
   USE_CUSTOM_DISPLAY_DRIVER = 0
   SOC_TYPE                = 2
   DEFINE ELISH_RAMOOPS_LOG = FALSE
+  DEFINE ELISH_RAMOOPS_VIEWER = FALSE
   DEFINE ELISH_LOADER_PROBE = FALSE
   DEFINE ELISH_LOADER_PROBE_RUN_KERNEL = FALSE
   DEFINE ELISH_LOADER_PROBE_SMMU = FALSE
@@ -25,6 +26,10 @@
   DEFINE ELISH_UFS_ROOT_WINDOWS_PROBE = 0
 
 !include KonaPkg/KonaPkg.dsc.inc
+
+!if $(ELISH_RAMOOPS_VIEWER) == TRUE && $(ELISH_RAMOOPS_LOG) == TRUE
+!error Ramoops viewer requires SEC to preserve the console ring
+!endif
 
 !if $(TARGET) == DEBUG && $(ELISH_RAMOOPS_LOG) == TRUE && $(ELISH_SEC_SMMU_PROBE) == TRUE
 [BuildOptions.common.EDKII.SEC]
@@ -97,6 +102,12 @@
   Binaries/pipa/QcomPkg/Drivers/EnvDxe/EnvDxe.inf
   Binaries/pipa/QcomPkg/Drivers/SmemDxe/SmemDxe.inf
   SiliciumPkg/Drivers/RamManagerDxe/RamManagerDxe.inf
+!if $(ELISH_RAMOOPS_VIEWER) == TRUE
+  elishPkg/Drivers/ElishRamoopsViewerDxe/ElishRamoopsViewerDxe.inf {
+    <LibraryClasses>
+      RamLogLib|elishPkg/Library/RamoopsLogLib/RamoopsLogLib.inf
+  }
+!endif
 !if $(ELISH_MEMORY_MAP_PROBE) == TRUE
 !if $(TARGET) == DEBUG && $(ELISH_RAMOOPS_LOG) == TRUE
   elishPkg/Drivers/ElishMemoryMapProbeDxe/ElishMemoryMapProbeDxe.inf {
