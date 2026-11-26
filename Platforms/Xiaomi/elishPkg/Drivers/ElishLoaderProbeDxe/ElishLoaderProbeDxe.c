@@ -85,6 +85,10 @@
 #define ELISH_UFS_GPT_PROBE 0
 #endif
 
+#ifndef ELISH_UFS_ROOT_WINDOWS_PROBE
+#define ELISH_UFS_ROOT_WINDOWS_PROBE 0
+#endif
+
 #define ELISH_PMSG_BASE                    0xB0200000
 #define ELISH_PMSG_BYTES                   0x00200000
 #define ELISH_PMSG_RETURN_MARKER_ADDRESS   0xB03FF000
@@ -732,6 +736,8 @@ WaitUfsRegister (IN UINTN Address, IN UINT32 Expected)
 
 #if ELISH_UFS_GPT_PROBE
 #define ELISH_LUN0_LAST   61880319U
+#define ELISH_USERDATA_FIRST 6619136U
+#define ELISH_USERDATA_LAST  61870314U
 
 STATIC
 BOOLEAN
@@ -834,7 +840,7 @@ CheckElishGpt (IN OUT UINT8 *Data, IN BOOLEAN Backup)
                   Header->PartitionEntryLBA == (Backup ? ELISH_LUN0_LAST - 4 : 2) &&
                   Header->FirstUsableLBA == 6 && Header->LastUsableLBA == ELISH_LUN0_LAST - 5 &&
                   Header->NumberOfPartitionEntries == 128 && Header->SizeOfPartitionEntry == sizeof (*Entries) &&
-                  Userdata->StartingLBA == 6619136 && Userdata->EndingLBA == 61870314 &&
+                  Userdata->StartingLBA == ELISH_USERDATA_FIRST && Userdata->EndingLBA == ELISH_USERDATA_LAST &&
                   CompareMem (Userdata->PartitionName, UserdataName, sizeof (UserdataName)) == 0;
   Trace ("ELISH_UFS_GPT: %a %a capture-crc=%08x header-crc=%08x/%08x entries-crc=%08x/%08x userdata=%lu-%lu\n",
          Backup ? "backup" : "primary", Valid ? "PASS" : "FAIL", CaptureCrc, HeaderCrc,
@@ -872,6 +878,46 @@ TraceUfsGpt (IN UINTN Host, IN UINTN Base)
   }
   return TRUE;
 }
+
+#if ELISH_UFS_ROOT_WINDOWS_PROBE
+STATIC
+BOOLEAN
+TraceUfsRootWindows (IN UINTN Host, IN UINTN Base)
+{
+  // 21H461 host SHNGROOT layout. Offsets use native 4 KiB LBAs, even
+  // though the OS image's inner GPT uses 512-byte sectors.
+  STATIC CONST struct {
+    CONST CHAR8 *Name;
+    UINT32      RelativeLba;
+    UINT16      MagicOffset;
+    CONST CHAR8 *Magic;
+  } Samples[] = {
+    { "manifest",        0,       0,     "SHNGROOT" },
+    { "OS.first",        256,     512,   "EFI PART" },
+    { "OS.NXSB",         260,     0x420, "NXSB" },
+    { "OS.last",         1484040, 0,     NULL },
+    { "SystemOS.first",  1484288, 32,    "NXSB" },
+    { "SystemOS.last",   2290687, 0,     NULL },
+  };
+  UINT8 *Data = (UINT8 *)(Base + 2 * EFI_PAGE_SIZE);
+
+  for (UINTN Index = 0; Index < ARRAY_SIZE (Samples); ++Index) {
+    UINT32 RelativeLba = Samples[Index].RelativeLba;
+    UINT32 Lba = ELISH_USERDATA_FIRST + RelativeLba;
+    if (RelativeLba > ELISH_USERDATA_LAST - ELISH_USERDATA_FIRST ||
+        !ReadUfsLun0 (Host, Base, Lba, 1)) {
+      Trace ("ELISH_UFS_ROOT_WINDOWS: %a read failed\n", Samples[Index].Name);
+      return FALSE;
+    }
+    CONST CHAR8 *Magic = Samples[Index].Magic;
+    CONST CHAR8 *Match = Magic == NULL ? "n/a" :
+      (CompareMem (Data + Samples[Index].MagicOffset, Magic, AsciiStrLen (Magic)) == 0 ? "yes" : "no");
+    Trace ("ELISH_UFS_ROOT_WINDOWS: %a userdata-rel=%u lba=%u crc=%08x image-magic=%a\n",
+           Samples[Index].Name, RelativeLba, Lba, CalculateCrc32 (Data, EFI_PAGE_SIZE), Match);
+  }
+  return TRUE;
+}
+#endif
 #endif
 
 STATIC
@@ -887,6 +933,9 @@ TraceUfsNop (VOID)
   UINT32                       FaultAfter[3];
 #if ELISH_UFS_GPT_PROBE
   BOOLEAN                      GptPassed = FALSE;
+#if ELISH_UFS_ROOT_WINDOWS_PROBE
+  BOOLEAN                      WindowsRead = FALSE;
+#endif
 #endif
 
   if (!ValidateUfsMmioWindow ("UFS Host", ELISH_UFS_HOST_BASE,
@@ -977,6 +1026,11 @@ TraceUfsNop (VOID)
 #if ELISH_UFS_GPT_PROBE
     if (Passed) {
       GptPassed = TraceUfsGpt (Host, (UINTN)Base);
+#if ELISH_UFS_ROOT_WINDOWS_PROBE
+      if (GptPassed) {
+        WindowsRead = TraceUfsRootWindows (Host, (UINTN)Base);
+      }
+#endif
     }
 #endif
   }
@@ -993,6 +1047,11 @@ TraceUfsNop (VOID)
 #if ELISH_UFS_GPT_PROBE
   if (GptPassed && Stopped && Doorbell == 0 && CompareMem (FaultBefore, FaultAfter, sizeof (FaultBefore)) == 0) {
     Trace ("ELISH_UFS_GPT: PASS capacity, known block and both GPT copies\n");
+#if ELISH_UFS_ROOT_WINDOWS_PROBE
+    if (WindowsRead) {
+      Trace ("ELISH_UFS_ROOT_WINDOWS: six samples read, queue stopped, SMMU faults unchanged\n");
+    }
+#endif
   }
 #endif
 }
